@@ -1,0 +1,247 @@
+---
+title: "Statistical Tests in R"
+author: "Diana Moyano"
+date: "May 28, 2018"
+output: word_document
+---
+
+```{r}
+USDAclean = read.csv("USDA_Clean.csv")
+attach(USDAclean)
+
+str(USDAclean)
+```
+##Visualization of Feature Relationships
+We have used a function panel.cor() inside pair() to show the correlations among different features. The only
+line you should complete is the line that you assign a value to USDA_Selected_Featuers. Research how
+can you select multiple columns from a dataframe to use it inside pair() function.
+A) Show the relationship among Calories, Carbohydrate, Protein, Total Fat and Sodium. (5 p)
+B) Describe the correlations among Calories and other features. (5 p)
+Hint: We usually interpret the absolute value of correlation as follows:
+.00-.19 very weak
+.20-.39 weak
+.40-.59 moderate
+.60-.79 strong
+.80-1.0 very strong
+
+```{r}
+panel.cor <- function(x, y, digits=2, prefix="", cex.cor)
+{
+usr <- par("usr"); on.exit(par(usr))
+par(usr = c(0, 1, 0, 1))
+r <- abs(cor(x, y))
+txt <- format(c(r, 0.123456789), digits=digits)[1]
+txt <- paste(prefix, txt, sep="")
+if(missing(cex.cor)) cex <- 0.8/strwidth(txt)
+test <- cor.test(x,y)
+# borrowed from printCoefmat
+Signif <- symnum(test$p.value, corr = FALSE, na = FALSE,
+cutpoints = c(0, 0.001, 0.01, 0.05, 0.1, 1),
+symbols = c("***", "**", "*", ".", " "))
+text(0.5, 0.5, txt, cex = cex)
+1
+text(.8, .8, Signif, cex=cex, col=2)
+}
+
+
+#Assign a value USDA_Selected_Featuers that represents
+# "Calories","Carbohydrate","Protein","TotalFat", "Sodium" columns
+###################################################
+##### Complete code here and uncomment it
+USDA_Selected_Featuers <- USDAclean[,c("Calories","Carbohydrate","Protein","TotalFat", "Sodium")]
+
+#### Uncomment the following line when you assign USDA_Selected_Featuers to show the results
+pairs(USDA_Selected_Featuers, lower.panel=panel.smooth, upper.panel=panel.cor)
+# Explain what you can conclude from this visualization as a comment here
+```
+Total fat and Calories display a very strong positive lineal correlation (0.8). This coefficient is highly significant (3 stars).
+
+The correlation between Calories and Carbohydrate is moderate and positive (0.42) with a high significance level (3 stars)
+
+The correlation between Protein and Carbohydrate is weak and positive (.30), with a high level of significance (3 stars)
+
+
+The following correlations are very weak (.00-.19) and positive, with high level of significance (3 stars):
+-Protein and Calories (0.12)
+-Total fat and Carbohydrate(0.12)
+-Sodium and Carbohydrate (0.047)
+-Total Fat and Protein (0.057)
+
+##Regression Model on USDA Clean Data
+Create a Linear Regression Model (lm), using Calories as the dependent variable, and Carbohydrate, Protein,
+Total Fat and Sodium as independent variables. (10 p)
+```{r}
+LM_USDA<-lm(Calories~ Carbohydrate+ Protein+
+TotalFat + Sodium)
+
+summary(LM_USDA)
+```
+The model suggests that Carbohydrate, Protein and Total Fat have a highly significant influence over Calories (p-value below 0.001). Sodium's influence, on the other hand, is not statistically significant to Calories (p value is greater than 0.05).
+
+##Analyzing Regression Model
+A) In the above example, which independent feature is less significant? (Hint: Use ANOVA) (5 p)
+
+```{r}
+USDA_Anova<-aov(Calories~ Carbohydrate+ Protein+
+TotalFat + Sodium)
+summary(USDA_Anova)
+```
+The ANOVA model confirms what the linear regression summary suggested. Sodium's is the least significant to Calories (p value is greater than 0.05).
+
+B) Which independent variable has the strongest positive predictive power in the model? (Hint: Look at
+the coefitients calculated for each independant variable) (5 p)
+
+The variable with strongest positive predictive power is Total Fat, as its coefficient is the greatest of all (8.77 based on the multiple linear regression model). This means that for every unit in Total Fat, there is also an increase in calories by 8.77 units (if the rest of the variables remain constant)
+
+
+##Calories Prediction
+A new product is just produced with the following data:
+"Protein" "TotalFat" "Carbohydrate" "Sodium" "Cholesterol"
+0.1 40 425 430 75
+"Sugar" "Calcium" "Iron" "Potassium" "VitaminC" "VitaminE" "VitaminD"
+NA 42 NA 35 10 0.0 NA
+A) Based on the model you created, what is the predicted value for Calories ? (5 p)
+```{r}
+predict(LM_USDA, data.frame(Protein=.01, TotalFat=40, Carbohydrate=425,Sodium=430), type="response")
+```
+For Protein=.01, TotalFat=40, Carbohydrate=425 and Sodium=430, the mean amount of calories for the next data point sampled is expected to fall within 1905.412 and 1981.165. 
+
+B) If the Sodium amount increases 101 times from 430 to 43430 (10000% increase), how much change will
+occur on Calories in percent? Can you explain why? (5 p)
+
+```{r}
+predict(LM_USDA, data.frame(Protein=.01, TotalFat=40, Carbohydrate=425,Sodium=43430), type="response")
+
+#Percentage increase
+(1957.261-1943.288)/1943.288
+```
+With an increase of 10000% in Sodium, there is approximately a 0.7% increase in Calories. This is due to the low degree of influence of this variable on Calories (previously mentioned through the multiple linear regression model)
+
+##Wilcoxon Tests
+Research Question: Does illustrations improve memorization?
+A study of primary education asked elementaty school students to retell two book articles that they read
+earlier in the week. The first (Article 1) had no picutres, and the second (Article 2) illustrated with pictures.
+An expert listened to recordings of the students retelling each article and assigned a score for certain uses of
+language. Higher scores are better. Here are the data for five readers in a this study:
+Student 1 2 3 4 5
+Article 1 0.40 0.72 0.00 0.36 0.55
+Article 2 0.77 0.49 0.66 0.28 0.38
+We wonder if illustrations improve how the students retell an article.
+#What is H0 and Ha ?
+(10 p)
+
+H0-> The relative frequency distributions are identical (students do not experience any difference in results between illustrated and non-illustrated articles)
+H1-> The relative frequency distribution for Article 2 is shifted to the right of the relative frequency distribution of the Article 1 population. In other words, the article with illustrations show better results than the one with no illustrations
+
+#Paired or Independent design?
+Based on your answer, which Wilcoxon test should you use? (5 p)
+
+This is a paired design, as the students were exposed to both articles in this experiment (same group, different projects). Hence we should use the Wilcoxon Signed-rank test.
+
+Will you accept or reject your Null Hypothesis? (lambda = 0.05)
+Do illustrations improve how the students retell an article or not? (5 p)
+
+```{r}
+Article_1<-c(0.40, 0.72, 0.00, 0.36, 0.55)
+Article_2<-c(0.77, 0.49, 0.66, 0.28, 0.38)
+
+wilcox.test(Article_2,Article_1,paired=TRUE, alternative = "greater")
+```
+There is not enough evidence to reject the null hypothesis, as its p-value 0.4 is greater than 0.05. It means that for this particular experiment, articles with illustrations do not necesarily improve memorization.
+
+
+##Packaging Problem
+Two companies selling toothpastes with the lable of 100 grams per tube on the package. We randomly bought
+eight toothpastes from each company A and B from random stores. Afterwards, we scaled them using high
+precision scale. Our measurements are recorded as follows:
+Company A: 97.1 101.3 107.8 101.9 97.4 104.5 99.5 95.1
+Company B: 103.5 105.3 106.5 107.9 102.1 105.6 109.8 97.2
+3
+Distribution Analysis
+Are the distributions of package weights similar for these companies? Are they normally distributed or
+skewed? (10 p) (Hint: Use boxplot)
+
+```{r}
+Company_A<-c(97.1, 101.3, 107.8, 101.9, 97.4, 104.5, 99.5, 95.1)
+Company_B<-c(103.5, 105.3, 106.5, 107.9, 102.1, 105.6, 109.8, 97.2)
+
+summary(Company_A)
+summary(Company_B)
+
+boxplot(Company_A, Company_B)
+
+plot(density(Company_A))
+
+plot(density(Company_B))
+
+```
+The distributions between these two companies are not similar. Company B tends to display higher values than company A (showed in the boxplot). 
+
+In terms of normality, company A's distribution is closer to a bell-shaped curve, whereas company B has two peaks (less normally distributed).
+
+It is also important to consider that these are small samples and further analysis is require make an assumption of normality.
+
+#Are packaging process similar or different based on weight measurements?
+Can we be at least 95% confident that there is no difference between packaging of these two companies? (5 p)
+
+
+
+
+```{r}
+wilcox.test(Company_A,Company_B,paired=FALSE)
+```
+p-value is 0.049, which means that we reject the null hypothesis. In other words, the packaging process between these two companies is different (statistically significant).
+
+#Can we be at least 99% confident? (5 p)
+Please explain.
+
+
+```{r}
+wilcox.test(Company_A,Company_B,paired=FALSE, conf.level = 0.99)
+```
+
+Answer: With a significance level of 1%, the null hypothesis is accepted, as p-value is greater than 0.01. This means that there is no statistically significant difference between both packaging processes 
+
+##Correlation
+Plot and see the relationship between "cylinder" (cyl) and "weight" (wt) of the cars from mtcars dataset. A)
+Can you see any patterns of correlation between these two variable? (5 p)
+
+```{r}
+attach(mtcars)
+plot(cyl,wt)
+```
+We can see a positive linear relationship between these two variables. However, we need to keep in mind that this is a small sample and further analysis may be required.
+
+B) What is the best description for "cyl" and "wt" variables? (Ratio, Ordinal, Interval, or Categorical) (5 p)
+
+```{r}
+str(cyl)
+str(wt)
+```
+Answer: 
+cyl	 Number of cylinders 
+wt	 Weight (1000 lbs)   
+
+Both are ratios, as they can be measured. Additionaly zero of those measurements indicates that there is none of that variable (unlike interval)
+
+However, it's important to perform a shapiro test in order to measure normality:
+
+```{r}
+shapiro.test(cyl)
+
+shapiro.test(wt)
+```
+wt passes the normality test, as it's p-value is greater than 0.05 (we keep the null hypothesis: the data is normally distributed)
+
+However, cyl displays a p-value below 0.05, which means that there is enough evidence to reject the null hypothesis.
+
+
+C) Based on the description of the "cyl" and "wt" variables, should you use "Pearson" or "Spearman"
+correlation? Find the correlation between these two variables. (10 p)
+
+We should use spearman based on the results in the shapiro tests.
+
+```{r}
+cor.test(cyl,wt,method="spearman")
+```
+These two variables have a strong positive lineal correlation (0.85). This relationship is high;y significant (p-value is less than .05).
